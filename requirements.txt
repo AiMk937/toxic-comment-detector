@@ -1,0 +1,9 @@
+pandas
+numpy
+scikit-learn
+nltk
+matplotlib
+seaborn
+jupyter
+xgboost
+Flask        # For app deployment, optional
