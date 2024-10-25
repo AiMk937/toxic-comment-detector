@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Toxic Comment Detector: Leveraging NLP for the Identification of Online Harassment
 
 **Abstract:**  
