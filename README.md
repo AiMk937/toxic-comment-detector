@@ -1,17 +1,12 @@
-<<<<<<< HEAD
+
 # Toxic Comment Detector: Leveraging NLP for the Identification of Online Harassment
 
 **Abstract:**  
 This project presents a Toxic Comment Detector utilizing Natural Language Processing (NLP) to automatically identify and mitigate harmful language in real-time across online platforms. The system categorizes comments into hate speech, profanity, cyberbullying, and other toxic behaviors, aiming to foster safer and more inclusive digital communities by curbing toxic interactions.
 
-### Project Members
+### Project Collaborators
 1. **Khan Aimaan Javed** – Team Leader  
-2. Siddharth Ramchandran Pallar  
-3. Mariyum Sharif Ahmed Siddique  
-4. Muskan Shahnawaz Khan  
-
-### Project Guide
-- No guides assigned.
+2. Mariyum Sharif Ahmed Siddique  
 
 ### Deployment Steps
 Follow the steps below to run the project:
@@ -20,11 +15,7 @@ Follow the steps below to run the project:
 2. Run the Flask API server using the command: `python app/app.py`.
 3. Start the frontend server using: `npm start` (if using a separate frontend).
 4. Access the application on `http://127.0.0.1:5000` to test the toxic comment detection functionality.
-
-### Subject Details
-- **Class:** BE (COMP) Division A (2024-2025)  
-- **Subject:** Natural Language Processing (NLP) & Lab  
-- **Project Type:** Mini Project  
+ 
 
 ### Platform, Libraries, and Frameworks Used
 1. **Node.js** for handling frontend operations.
