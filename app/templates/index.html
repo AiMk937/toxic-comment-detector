@@ -1,29 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Toxic Comment Detector</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toxic Comment Detector</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container mt-5">
-        <h1 class="text-center">Toxic Comment Detector</h1>
-        <div class="mb-3">
-            <textarea id="comments" class="form-control" rows="5" placeholder="Enter your comments (one per line)..."></textarea>
-        </div>
-        <button class="btn btn-primary w-100" onclick="detectToxicity()">Detect Toxicity</button>
+  <main class="wrap">
+    <header>
+      <h1>Toxic Comment Detector</h1>
+      <p class="sub">TF-IDF + Logistic Regression trained on 159k Wikipedia comments (Jigsaw). Scores six kinds of toxicity.</p>
+    </header>
 
-        <div id="loading" class="text-center mt-4" style="display: none;">Analyzing comments, please wait...</div>
-        <div id="results" class="mt-4"></div>
+    <label for="comments" class="lbl">Comments - one per line</label>
+    <textarea id="comments" rows="6" placeholder="Thanks for fixing the citation, great work!&#10;You are an idiot and nobody wants you here."></textarea>
+
+    <div class="controls">
+      <label for="threshold">Threshold <span id="thVal">0.50</span></label>
+      <input type="range" id="threshold" min="0.1" max="0.9" step="0.05" value="0.5">
+      <button id="run">Analyze</button>
     </div>
 
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <p id="status" class="status" role="status"></p>
+    <section id="results"></section>
+  </main>
+
+  <script>window.LABEL_NAMES = {{ label_names | tojson }};</script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

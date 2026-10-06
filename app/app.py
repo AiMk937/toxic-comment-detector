@@ -1,68 +1,57 @@
-import sys
+"""Flask web app and JSON API for the toxic comment detector.
+
+Run with:  python -m app.app   (then open http://127.0.0.1:5000)
+"""
 import os
-from flask import Flask, request, jsonify, render_template
-import pickle
 
-# Correct the import path for preprocess_text
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-from preprocess import preprocess_text
+from flask import Flask, jsonify, render_template, request
 
-# Initialize Flask app
+from src.config import LABEL_NAMES, MODEL_PATH
+from src.predict import ToxicityDetector
+
+MAX_COMMENTS = 50
+MAX_CHARS = 5000
+
 app = Flask(__name__, static_folder="static", template_folder="templates")
+app.json.sort_keys = False  # Keeps labels in toxic -> identity_hate order
 
-# Load the saved model and vectorizer
-def load_model():
-    model_path = '/Users/aimaankhan/ENGINEERING/SEM 7/Projects/NLP/ToxicCommentDetector/models/toxic_comment_model.pkl'
-    try:
-        with open(model_path, 'rb') as f:
-            model, vectorizer = pickle.load(f)
-        return model, vectorizer
-    except Exception as e:
-        print(f"Error loading model: {e}")
-        return None, None
+# Loads the model once at startup; the app still starts (with a clear error) if training hasn't been run
+try:
+    detector = ToxicityDetector(os.getenv("MODEL_PATH", MODEL_PATH))
+    load_error = None
+except FileNotFoundError as err:
+    detector, load_error = None, str(err)
 
-model, vectorizer = load_model()
 
-@app.route('/')
+@app.get("/")
 def home():
-    # Serve the homepage (index.html)
-    return render_template('index.html')
+    return render_template("index.html", label_names=LABEL_NAMES)
 
-@app.route('/predict', methods=['POST'])
+
+@app.get("/health")
+def health():
+    return jsonify({"status": "ok" if detector else "model_missing", "error": load_error})
+
+
+@app.post("/predict")
 def predict():
-    """Endpoint to make predictions on user-provided comments."""
-    if not model or not vectorizer:
-        return jsonify({'error': 'Model not loaded'}), 500
+    if detector is None:
+        return jsonify({"error": load_error}), 503
 
-    data = request.get_json(force=True)
-    comments = data['comments']
+    # Validates input size so one request can't overload the server
+    data = request.get_json(silent=True) or {}
+    comments = data.get("comments")
+    if not isinstance(comments, list) or not comments:
+        return jsonify({"error": "Send JSON like {\"comments\": [\"text\", ...]}"}), 400
+    comments = [str(c)[:MAX_CHARS] for c in comments if str(c).strip()][:MAX_COMMENTS]
+    if not comments:
+        return jsonify({"error": "All comments were empty."}), 400
 
-    # Preprocess and vectorize the input comments
-    try:
-        comments_preprocessed = [preprocess_text(comment) for comment in comments]
-        comments_tfidf = vectorizer.transform(comments_preprocessed)
+    threshold = float(data.get("threshold", 0.5))
+    detector.threshold = min(max(threshold, 0.05), 0.95)
+    return jsonify({"predictions": detector.predict(comments)})
 
-        # Make predictions
-        predictions = model.predict(comments_tfidf)
-        
-        # Convert predictions to list of dictionaries for each comment
-        prediction_results = []
-        for i, comment in enumerate(comments):
-            result = {
-                'comment': comment,
-                'toxic': int(predictions[i][0]),
-                'severe_toxic': int(predictions[i][1]),
-                'obscene': int(predictions[i][2]),
-                'threat': int(predictions[i][3]),
-                'insult': int(predictions[i][4]),
-                'identity_hate': int(predictions[i][5])
-            }
-            prediction_results.append(result)
-
-        return jsonify({'predictions': prediction_results})
-    except Exception as e:
-        print(f"Error during prediction: {e}")
-        return jsonify({'error': 'Prediction failed'}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Debug mode only when explicitly enabled - it allows code execution if exposed
+    app.run(debug=os.getenv("FLASK_DEBUG") == "1")

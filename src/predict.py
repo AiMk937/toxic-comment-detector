@@ -1,39 +1,43 @@
-import pickle
-import pandas as pd
-from preprocess import preprocess_text, vectorize_data
+"""Score comments for toxicity from the command line or from other code.
 
-def load_model(model_path='models/toxic_comment_model.pkl'):
-    """Load the saved model and vectorizer"""
-    with open(model_path, 'rb') as f:
-        model, vectorizer = pickle.load(f)
-    return model, vectorizer
+Usage:
+    python -m src.predict "you are a genius" "nobody likes you, idiot"
+"""
+import argparse
 
-def predict_comments(comments, model, vectorizer):
-    """Predict whether the comments are toxic or not"""
-    # Preprocess and vectorize the comments
-    comments_preprocessed = [preprocess_text(comment) for comment in comments]
-    comments_tfidf = vectorizer.transform(comments_preprocessed)
-    
-    # Make predictions
-    predictions = model.predict(comments_tfidf)
-    return predictions
+from src.config import LABELS, MODEL_PATH
+from src.model import load_model
+
+
+class ToxicityDetector:
+    """Loads the trained model once and scores lists of comments."""
+
+    def __init__(self, model_path=MODEL_PATH, threshold: float = 0.5):
+        self.model = load_model(model_path)
+        self.threshold = threshold
+
+    def predict(self, comments: list[str]) -> list[dict]:
+        # Returns a probability per label plus the labels above the threshold
+        comments = [str(c) for c in comments]
+        proba = self.model.predict_proba(comments)
+        results = []
+        for text, row in zip(comments, proba):
+            scores = {lbl: round(float(p), 4) for lbl, p in zip(LABELS, row)}
+            flagged = [lbl for lbl, p in scores.items() if p >= self.threshold]
+            results.append({"comment": text, "scores": scores, "labels": flagged, "is_toxic": bool(flagged)})
+        return results
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Score comments for toxicity.")
+    parser.add_argument("comments", nargs="+", help="One or more comments in quotes")
+    parser.add_argument("--threshold", type=float, default=0.5)
+    args = parser.parse_args()
+
+    for r in ToxicityDetector(threshold=args.threshold).predict(args.comments):
+        verdict = ", ".join(r["labels"]) if r["is_toxic"] else "clean"
+        print(f"{verdict:30s} | {r['comment']}")
+
 
 if __name__ == "__main__":
-    # Load the saved model
-    model, vectorizer = load_model()
-
-    # Sample comments to predict
-    sample_comments = [
-        "I hate you!",
-        "You are amazing, great work!",
-        "This is the worst thing ever."
-    ]
-    
-    # Make predictions
-    predictions = predict_comments(sample_comments, model, vectorizer)
-    
-    # Display predictions
-    for comment, prediction in zip(sample_comments, predictions):
-        print(f"Comment: {comment}")
-        print(f"Toxicity labels (0=No, 1=Yes): {prediction}")
-        print("----")
+    main()
